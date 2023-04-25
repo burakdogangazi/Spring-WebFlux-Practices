@@ -75,7 +75,6 @@ public class CustomerService {
         catch (InterruptedException e){
             e.printStackTrace();
         }
-
         return seconds;
     }
 
