@@ -44,7 +44,7 @@ public class CustomerController {
 
     @DeleteMapping("/{id}")
     public Mono<String> deleteCustomer(@PathVariable("id") String id){
-        return service.deleteCustomer(id).thenReturn("deleted");
+        return service.deleteCustomer(id).thenReturn("Deleted");
         //pipe tamamlanınca deleted dön ile string dönme işlemi gerçekleşti.
     }
 

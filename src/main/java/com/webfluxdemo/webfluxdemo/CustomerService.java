@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+
 import java.util.List;
 
 
@@ -34,7 +37,10 @@ public class CustomerService {
     }
 
     public Flux<Customer> findAllCustomer(){
-        return repo.findAll();
+        return repo.findAll().doOnNext(customer -> heavyWork().subscribe(
+                integer -> log.info("signal"),
+                err-> log.error("error"),
+                ()->log.info("done")));
     }
 
     public Mono<List<Customer>> findAllAsList(){
@@ -47,7 +53,38 @@ public class CustomerService {
     }
 
     public Mono<String> changeStatus(String id, Boolean status){
-        return Mono.empty();
+
+        return repo.changeEnabled(id,status)
+                .flatMap(updateResult -> {
+                    if(updateResult.getMatchedCount() <= 0 ){
+                        return Mono.just("Not Found");
+                    }
+                    if(updateResult.getModifiedCount() <= 0 ){
+                        return Mono.just("no change");
+                    }
+
+                    return Mono.just("changed");
+                });
+
+    }
+
+    private Integer sleepsSeconds(int seconds){
+        try{
+            Thread.sleep(seconds*1000L);
+        }
+        catch (InterruptedException e){
+            e.printStackTrace();
+        }
+
+        return seconds;
+    }
+
+    private Mono<Integer> heavyWork(){
+        return Mono.fromSupplier(()-> sleepsSeconds(5))
+                .publishOn(Schedulers.boundedElastic());
+                //sonuç hemen geldi çünkü publish on ile bekleme ile başka pipe a aktardık bekletmeyi
+                // başka pipe tamamnlanınca sinyal geldi ancak request 5 saniye aklamadı.
+
     }
 
     // subscribe olmak burada gerekmiyor çünkü browser açınca subscribe otomatik oluyor. Console uygulamasında subscribe olmalıyız.
